@@ -1,141 +1,109 @@
 import matplotlib.pyplot as plt
-from collections import Counter
+import numpy as np
 
-def make_chart_simple_line_chart(plt):
 
-    years = [1950, 1960, 1970, 1980, 1990, 2000, 2010]
-    gdp = [300.2, 543.3, 1075.9, 2862.5, 5979.6, 10289.7, 14958.3]
+def my_line_chart(plt):
+    years = ["1985", "1986", "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995", "1996", "1997",
+             "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010",
+             "2011", "2012", "2013", "2014", "2015"]
+    gdp = [14094688429, 26336617862, 36658108169, 25423812494, 6293304847, 6471740486,
+           9613369553, 9866990096, 13180954014, 16286434094, 20736163915, 24657470331,
+           26843701136, 27209601995, 28683658004, 33640085727, 35291349277, 37947904054,
+           42717072777, 49424107709, 57633255739, 66371664817, 77414425532, 99130304099,
+           106014600963, 115931749904, 135539487317, 155820001920, 171222025117, 186204652922,
+           193599379094]
 
     # create a line chart, years on x-axis, gdp on y-axis
-    plt.plot(years, gdp, color='green', marker='o', linestyle='solid')
+    plt.plot(years, gdp, color='#f39c12', marker='o', linestyle='solid')
 
     # add a title
-    plt.title("Nominal GDP")
+    plt.title("Vietnam GDP")
 
     # add a label to the y-axis
     plt.ylabel("Billions of $")
     plt.show()
 
 
-def make_chart_simple_bar_chart(plt):
-
-    movies = ["Annie Hall", "Ben-Hur", "Casablanca", "Gandhi", "West Side Story"]
-    num_oscars = [5, 11, 3, 8, 10]
+def my_bar_chart(plt):
+    color_names = ["Emerald", "Green Sea", "Midnight Blue", "Carrot", "Peter River"]
+    colors = ["#2ecc71", "#16a085", "#2c3e50", "#e67e22", "#3498db"]
+    num_favorite = [5, 11, 3, 8, 10]
 
     # bars are by default width 0.8, so we'll add 0.1 to the left coordinates
     # so that each bar is centered
-    xs = [i + 0.1 for i, _ in enumerate(movies)]
+    xs = [i + 0.1 for i, _ in enumerate(color_names)]
 
-    # plot bars with left x-coordinates [xs], heights [num_oscars]
-    plt.bar(xs, num_oscars)
-    plt.ylabel("# of Academy Awards")
-    plt.title("My Favorite Movies")
+    # plot bars with left x-coordinates [xs], heights [num_favorite]
+    plt.bar(xs, num_favorite, color=colors)
+    plt.title("My Favorite Colors")
 
-    # label x-axis with movie names at bar centers
-    plt.xticks([i + 0.5 for i, _ in enumerate(movies)], movies)
-    
+    # label x-axis with color names at bar centers
+    plt.xticks([i + 0.5 for i, _ in enumerate(color_names)], color_names)
+
     plt.show()
 
-def make_chart_histogram(plt):
-    grades = [83,95,91,87,70,0,85,82,100,67,73,77,0]
-    decile = lambda grade: grade // 10 * 10 
-    histogram = Counter(decile(grade) for grade in grades)
 
-    plt.bar([x - 4 for x in histogram.keys()], # shift each bar to the left by 4
-            histogram.values(),                # give each bar its correct height
-            8)                                 # give each bar a width of 8
-    plt.axis([-5, 105, 0, 5])                  # x-axis from -5 to 105,
-                                               # y-axis from 0 to 5
-    plt.xticks([10 * i for i in range(11)])    # x-axis labels at 0, 10, ..., 100
-    plt.xlabel("Decile")
+def my_histogram(plt):
+    data = []
+    for i in range(100):
+        data.append(np.random.randint(1, 11))
+
+    plt.hist(data, bins=10, facecolor='#bdc3c7')
+
+    plt.xlabel("Points")
     plt.ylabel("# of Students")
-    plt.title("Distribution of Exam 1 Grades")
+    plt.title("Results of the exam")
     plt.show()
 
-def make_chart_misleading_y_axis(plt, mislead=True):
 
-    mentions = [500, 505]
-    years = [2013, 2014]
-
-    plt.bar([2012.6, 2013.6], mentions, 0.8)
-    plt.xticks(years)
-    plt.ylabel("# of times I heard someone say 'data science'")
-
-    # if you don't do this, matplotlib will label the x-axis 0, 1
-    # and then add a +2.013e3 off in the corner (bad matplotlib!)
-    plt.ticklabel_format(useOffset=False)
-
-    if mislead:
-        # misleading y-axis only shows the part above 500
-        plt.axis([2012.5,2014.5,499,506])
-        plt.title("Look at the 'Huge' Increase!")
-    else:
-        plt.axis([2012.5,2014.5,0,550])
-        plt.title("Not So Huge Anymore.")       
-    plt.show()
-
-def make_chart_several_line_charts(plt):
-
-    variance     = [1,2,4,8,16,32,64,128,256]
-    bias_squared = [256,128,64,32,16,8,4,2,1]
-    total_error  = [x + y for x, y in zip(variance, bias_squared)]
-
-    xs = range(len(variance))
+def my_multi_line_charts(plt):
+    bears = [10, 58, 85, 115, 139, 182]
+    dolphins = [150, 75, 32, 14, 8, 5]
+    whales = [80, 50, 100, 75, 90, 70]
+    x = [0, 1, 2, 3, 4, 5]
+    years = ["2009", "2010", "2011", "2012", "2013", "2014"]
 
     # we can make multiple calls to plt.plot 
     # to show multiple series on the same chart
-    plt.plot(xs, variance,     'g-',  label='variance')    # green solid line
-    plt.plot(xs, bias_squared, 'r-.', label='bias^2')      # red dot-dashed line
-    plt.plot(xs, total_error,  'b:',  label='total error') # blue dotted line
+    plt.plot(x, bears, '#16a085', marker='o', linewidth=3.0, label='Bears')
+    plt.plot(x, dolphins, '#c0392b', marker='s', linewidth=3.0, label='Dolphins')
+    plt.plot(x, whales, '#3498db', marker='^', linewidth=3.0, label='Whales')
 
     # because we've assigned labels to each series
     # we can get a legend for free
     # loc=9 means "top center"
     plt.legend(loc=9)
-    plt.xlabel("model complexity")
-    plt.title("The Bias-Variance Tradeoff")
+    plt.title("Number of animals each year")
+    plt.xlabel("Years")
+    plt.xticks(x, years)
     plt.show()
 
-def make_chart_scatter_plot(plt):
 
-    friends = [ 70, 65, 72, 63, 71, 64, 60, 64, 67]
-    minutes = [175, 170, 205, 120, 220, 130, 105, 145, 190]
-    labels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+def my_scatter_plot(plt):
+    sizes = [700, 650, 720, 630, 710, 640, 600, 640, 670]
+    prices = [175, 170, 205, 120, 220, 130, 105, 145, 190]
+    labels = ["$175", "$170", "$205", "$120", "$220", "$130", "$105", "$145", "$190"]
 
-    plt.scatter(friends, minutes)
-    
+    plt.scatter(sizes, prices, marker='s', s=40, color='#2ecc71')
+
     # label each point
-    for label, friend_count, minute_count in zip(labels, friends, minutes):
+    for label, friend_count, minute_count in zip(labels, sizes, prices):
         plt.annotate(label,
-                     xy=(friend_count, minute_count), # put the label with its point
-                     xytext=(5, -5), # but slightly offset
+                     xy=(friend_count, minute_count),  # put the label with its point
+                     xytext=(5, -5),  # but slightly offset
                      textcoords='offset points')
 
-    plt.title("Daily Minutes vs. Number of Friends")
-    plt.xlabel("# of friends")
-    plt.ylabel("daily minutes spent on the site")
+    plt.title("House prices")
+    plt.xlabel("Size in m2")
+    plt.ylabel("Thousand $")
     plt.show()
 
-def make_chart_scatterplot_axes(plt, equal_axes=False):
 
-    test_1_grades = [ 99, 90, 85, 97, 80]
-    test_2_grades = [100, 85, 60, 90, 70]
-
-    plt.scatter(test_1_grades, test_2_grades)
-    plt.xlabel("test 1 grade")
-    plt.ylabel("test 2 grade")
-
-    if equal_axes:
-        plt.title("Axes Are Comparable")
-        plt.axis("equal")
-    else:
-        plt.title("Axes Aren't Comparable")
-
-    plt.show()
-
-def make_chart_pie_chart(plt):
-
-    plt.pie([0.95, 0.05], labels=["Uses pie charts", "Knows better"])
+def my_pie_chart(plt):
+    data = [0.5, 0.26, 0.11, 0.04, 0.02, 0.02, 0.01, 0.04]
+    smart_phone = ["Apple", "Samsung", "LG", "Motorola", "HTC", "Nokia", "Amazon", "Other"]
+    colors = ["#ecf0f1", "#3498db", "#e67e22", "#1abc9c", "#bdc3c7", "#8e44ad", "#f39c12", "#2c3e50"]
+    plt.pie(data, labels=smart_phone, colors=colors)
 
     # make sure pie is a circle and not an oval
     plt.axis("equal")
@@ -143,21 +111,14 @@ def make_chart_pie_chart(plt):
 
 
 if __name__ == "__main__":
+    my_line_chart(plt)
 
-    make_chart_simple_line_chart(plt)
+    my_bar_chart(plt)
 
-    make_chart_simple_bar_chart(plt)
+    my_histogram(plt)
 
-    make_chart_histogram(plt)
+    my_multi_line_charts(plt)
 
-    make_chart_misleading_y_axis(plt, mislead=True)
+    my_scatter_plot(plt)
 
-    make_chart_misleading_y_axis(plt, mislead=False)
-
-    make_chart_several_line_charts(plt)
-
-    make_chart_scatterplot_axes(plt, equal_axes=False)
-
-    make_chart_scatterplot_axes(plt, equal_axes=True)
-
-    make_chart_pie_chart(plt)
+    my_pie_chart(plt)

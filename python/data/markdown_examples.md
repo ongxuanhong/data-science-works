@@ -221,3 +221,7 @@ ___
 
 Underscores
 ```
+
+# Visualization
+Get Vietnam GDP data at 
+http://data.worldbank.org/country/vietnam
