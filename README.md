@@ -1,6 +1,7 @@
 # Table of Contents
 ## Visualizing
 [Visualizing Data](https://github.com/ongxuanhong/data-science-works/blob/master/python/visualizing_data.py)
+
 Markers types
 ```
 ================    ===============================
