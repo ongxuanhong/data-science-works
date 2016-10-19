@@ -103,7 +103,9 @@ def my_pie_chart(plt):
     data = [0.5, 0.26, 0.11, 0.04, 0.02, 0.02, 0.01, 0.04]
     smart_phone = ["Apple", "Samsung", "LG", "Motorola", "HTC", "Nokia", "Amazon", "Other"]
     colors = ["#ecf0f1", "#3498db", "#e67e22", "#1abc9c", "#bdc3c7", "#8e44ad", "#f39c12", "#2c3e50"]
-    plt.pie(data, labels=smart_phone, colors=colors)
+
+    plt.pie(data, labels=smart_phone, colors=colors, autopct='%1.1f%%',
+            startangle=-90, pctdistance=0.9, labeldistance=1.2)
 
     # make sure pie is a circle and not an oval
     plt.axis("equal")
