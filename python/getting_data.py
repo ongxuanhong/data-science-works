@@ -55,7 +55,7 @@ def scrape(num_pages=10):
     for page_num in range(1, num_pages + 1):
         print "souping page", page_num
         url = base_url + str(page_num)
-        soup = BeautifulSoup(requests.get(url).text, 'html5lib')
+        soup = BeautifulSoup(requests.get(url).text, 'lxml')
 
         for td in soup('td', 'thumbtext'):
             if not is_video(td):
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     print "# Data from: http://s.cafef.vn/du-lieu.chn"
     print "## TAB delimited stock prices"
 
-    with open('data/tab_delimited_stock_prices.txt', 'rb') as f:
+    with open('data/tab_delimited_stock_prices.tsv', 'rb') as f:
         reader = csv.reader(f, delimiter='\t')
         for row in reader:
             ma_ck = row[0]
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     print
 
     print "## COLON delimited stock prices"
-    with open('data/colon_delimited_stock_prices.txt', 'rb') as f:
+    with open('data/colon_delimited_stock_prices.csv', 'rb') as f:
         reader = csv.DictReader(f, delimiter=':')
         for row in reader:
             ma_ck = row["MA_CK"]
@@ -135,16 +135,16 @@ if __name__ == "__main__":
 
     print
 
-    print "## WRITING out comma_delimited_stock_prices.txt"
+    print "## WRITING out comma_delimited_stock_prices.csv"
     today_prices = {'VCF': 152.4, 'VAF': 13.3, 'ATA': 0.8}
-    with open('data/comma_delimited_stock_prices.txt', 'wb') as f:
+    with open('data/comma_delimited_stock_prices.csv', 'wb') as f:
         writer = csv.writer(f, delimiter=',')
         for stock, price in today_prices.items():
             writer.writerow([stock, price])
 
     print "## BeautifulSoup"
     html = requests.get("https://www.google.com").text
-    soup = BeautifulSoup(html, "html5lib")
+    soup = BeautifulSoup(html, "lxml")
     print soup
     print
 
