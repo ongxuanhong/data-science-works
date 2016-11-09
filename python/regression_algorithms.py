@@ -9,10 +9,13 @@ Algorithms:
     Coordinate descent
 Concepts:
     Loss functions, bias-variance tradeoff, cross-validation, sparsity, overfitting, model selection
+Scikit-learn: http://scikit-learn.org/stable/modules/linear_model.html
 """
 
 import os
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from sklearn import linear_model
 from sklearn.externals import joblib
@@ -29,11 +32,23 @@ def get_home_data():
     return df
 
 
+def plotting_model(model, X, y, title="Default"):
+    # Plot the data and the model prediction
+    X_fit = np.linspace(0, 35, 100)[:, np.newaxis]
+    y_fit = model.predict(X_fit)
+
+    plt.plot(X.squeeze(), y, 'o')
+    plt.plot(X_fit.squeeze(), y_fit)
+    plt.title(title)
+    plt.show()
+
+
 if __name__ == "__main__":
     df = get_home_data()
 
     # features selection
-    features = list(["bedrooms", "bathrooms", "floors", "waterfront"])
+    # features = list(["bedrooms", "bathrooms", "floors", "waterfront"])
+    features = list(["bedrooms"])
     y = df["price"]
     X = df[features]
 
@@ -51,6 +66,9 @@ if __name__ == "__main__":
     score_trained = linear.score(x_test, y_test)
     print "Model scored:", score_trained
 
+    # plotting model
+    plotting_model(linear, x_test, y_test)
+
     """
     LASSO MODEL
     """
@@ -62,6 +80,9 @@ if __name__ == "__main__":
     score_lasso_trained = lasso_linear.score(x_test, y_test)
     print "Lasso model scored:", score_lasso_trained
 
+    # plotting model
+    plotting_model(lasso_linear, X, y, "Lasso model")
+
     """
     RIDGE MODEL
     """
@@ -72,6 +93,9 @@ if __name__ == "__main__":
     # evaluating L2 regularized model
     score_ridge_trained = ridge_linear.score(x_test, y_test)
     print "Ridge model scored:", score_ridge_trained
+
+    # plotting model
+    plotting_model(ridge_linear, x_test, y_test, "Ridge")
 
     # saving model
     joblib.dump(linear, "models/linear_model_v1.pkl")
