@@ -15,6 +15,7 @@ import os
 
 import pandas as pd
 from sklearn import linear_model
+from sklearn.externals import joblib
 from sklearn.model_selection import train_test_split
 
 
@@ -30,15 +31,26 @@ def get_home_data():
 if __name__ == "__main__":
     df = get_home_data()
 
+    # features selection
     features = list(["bedrooms", "bathrooms", "floors", "waterfront"])
     y = df["price"]
     X = df[features]
 
+    # split dataset into training (70%) and testing set (30%)
     x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
+    # training model
     linear = linear_model.LinearRegression()
     linear.fit(x_train, y_train)
-    score_trained = linear.score(x_train, y_train)
 
-    predicted = linear.predict(x_test)
-    print score_trained
+    # evaluating model
+    score_trained = linear.score(x_train, y_train)
+    print "Model scored:", score_trained
+
+    # saving model
+    joblib.dump(linear, "models/linear_model_v1.pkl")
+
+    # loading model
+    clf = joblib.load("models/linear_model_v1.pkl")
+    predicted = clf.predict(x_test)
+    print "Predicted test:", predicted
