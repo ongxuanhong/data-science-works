@@ -15,7 +15,6 @@ Scikit-learn: http://scikit-learn.org/stable/modules/linear_model.html
 import os
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from sklearn import linear_model
 from sklearn.externals import joblib
@@ -24,7 +23,7 @@ from sklearn.model_selection import train_test_split
 
 
 def get_home_data():
-    """Get home data, from local csv or pandas repo."""
+    """Get home data, from local csv."""
     if os.path.exists("data/home_data.csv"):
         print("-- home_data.csv found locally")
         df = pd.read_csv("data/home_data.csv", index_col=0)
@@ -32,14 +31,16 @@ def get_home_data():
     return df
 
 
-def plotting_model(model, X, y, title="Default"):
-    # Plot the data and the model prediction
-    X_fit = np.linspace(0, 35, 100)[:, np.newaxis]
-    y_fit = model.predict(X_fit)
+def plotting_features_vs_target(features, x, y):
+    # define number of subplot
+    num_feature = len(features)
+    f, axes = plt.subplots(1, num_feature, sharey=True)
 
-    plt.plot(X.squeeze(), y, 'o')
-    plt.plot(X_fit.squeeze(), y_fit)
-    plt.title(title)
+    # plotting
+    for i in range(0, num_feature):
+        axes[i].scatter(x[features[i]], y)
+        axes[i].set_title(features[i])
+
     plt.show()
 
 
@@ -47,13 +48,17 @@ if __name__ == "__main__":
     df = get_home_data()
 
     # features selection
-    # features = list(["bedrooms", "bathrooms", "floors", "waterfront"])
-    features = list(["bedrooms"])
+    features = list(["bedrooms", "bathrooms", "grade"])
+    print "Features name:", list(df.columns.values)
+    print "Selected features:", features
     y = df["price"]
     X = df[features]
 
-    # split dataset into training (70%) and testing set (30%)
+    # split data-set into training (70%) and testing set (30%)
     x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+
+    # plotting features, target relationships
+    plotting_features_vs_target(features, x_train, y_train)
 
     """
     DEFAULT MODEL
@@ -66,9 +71,6 @@ if __name__ == "__main__":
     score_trained = linear.score(x_test, y_test)
     print "Model scored:", score_trained
 
-    # plotting model
-    plotting_model(linear, x_test, y_test)
-
     """
     LASSO MODEL
     """
@@ -80,9 +82,6 @@ if __name__ == "__main__":
     score_lasso_trained = lasso_linear.score(x_test, y_test)
     print "Lasso model scored:", score_lasso_trained
 
-    # plotting model
-    plotting_model(lasso_linear, X, y, "Lasso model")
-
     """
     RIDGE MODEL
     """
@@ -93,9 +92,6 @@ if __name__ == "__main__":
     # evaluating L2 regularized model
     score_ridge_trained = ridge_linear.score(x_test, y_test)
     print "Ridge model scored:", score_ridge_trained
-
-    # plotting model
-    plotting_model(ridge_linear, x_test, y_test, "Ridge")
 
     # saving model
     joblib.dump(linear, "models/linear_model_v1.pkl")
