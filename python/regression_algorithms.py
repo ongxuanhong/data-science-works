@@ -9,7 +9,6 @@ Algorithms:
     Coordinate descent
 Concepts:
     Loss functions, bias-variance tradeoff, cross-validation, sparsity, overfitting, model selection
-Scikit-learn: http://scikit-learn.org/stable/modules/linear_model.html
 """
 
 import os
