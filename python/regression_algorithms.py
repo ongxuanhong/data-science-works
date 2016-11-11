@@ -19,6 +19,8 @@ from sklearn import linear_model
 from sklearn.externals import joblib
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures
 
 
 def get_home_data():
@@ -99,3 +101,12 @@ if __name__ == "__main__":
     clf = joblib.load("models/linear_model_v1.pkl")
     predicted = clf.predict(x_test)
     print "Predicted test:", predicted
+
+    """
+    POLYNOMIAL REGRESSION
+    """
+    poly_model = Pipeline([('poly', PolynomialFeatures(degree=3)),
+                           ('linear', linear_model.LinearRegression(fit_intercept=False))])
+    poly_model = poly_model.fit(x_train, y_train)
+    score_poly_trained = poly_model.score(x_test, y_test)
+    print "Poly model scored:", score_poly_trained
