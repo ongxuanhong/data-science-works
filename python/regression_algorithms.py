@@ -105,8 +105,14 @@ if __name__ == "__main__":
     """
     POLYNOMIAL REGRESSION
     """
-    poly_model = Pipeline([('poly', PolynomialFeatures(degree=3)),
+    poly_model = Pipeline([('poly', PolynomialFeatures(degree=2)),
                            ('linear', linear_model.LinearRegression(fit_intercept=False))])
     poly_model = poly_model.fit(x_train, y_train)
     score_poly_trained = poly_model.score(x_test, y_test)
     print "Poly model scored:", score_poly_trained
+
+    poly_model = Pipeline([('poly', PolynomialFeatures(interaction_only=True, degree=2)),
+                           ('linear', linear_model.LinearRegression(fit_intercept=False))])
+    poly_model = poly_model.fit(x_train, y_train)
+    score_poly_trained = poly_model.score(x_test, y_test)
+    print "Poly model (interaction only) scored:", score_poly_trained
