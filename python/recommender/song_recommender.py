@@ -18,9 +18,9 @@ from math import sqrt
 import numpy as np
 import pandas as pd
 from scipy.sparse.linalg import svds
-from sklearn import cross_validation as cv
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics.pairwise import pairwise_distances
+from sklearn.model_selection import train_test_split
 
 
 def load_music_data(file_name):
@@ -79,7 +79,8 @@ if __name__ == "__main__":
 
     # Load music data
     song_data = load_music_data("song_data.csv")
-    song_data = song_data.head(1000)
+
+    song_data = song_data.head(10000)
     user_idx = values_to_map_index(song_data.user_id.unique())
     song_idx = values_to_map_index(song_data.song_id.unique())
 
@@ -92,13 +93,12 @@ if __name__ == "__main__":
     df_popular_songs = pd.DataFrame(popular_songs.items(), columns=["Song", "Count"])
     df_popular_songs = df_popular_songs.sort_values(by=["Count"], ascending=False)
     print df_popular_songs.head()
-    print "-- Number of songs:", len(song_data)
 
     n_users = song_data.user_id.unique().shape[0]
     n_items = song_data.song_id.unique().shape[0]
     print "Number of users = " + str(n_users) + " | Number of songs = " + str(n_items)
 
-    train_data, test_data = cv.train_test_split(song_data, test_size=0.25)
+    train_data, test_data = train_test_split(song_data, test_size=0.25)
     train_data_matrix = np.zeros((n_users, n_items))
     for line in train_data.itertuples():
         train_data_matrix[user_idx[line[1]], song_idx[line[2]]] = line[3]
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     print 'Item-based CF RMSE: ' + str(rmse(item_prediction, test_data_matrix))
 
     sparsity = round(1.0 - len(song_data) / float(n_users * n_items), 3)
-    print 'The sparsity level of MovieLens100K is ' + str(sparsity * 100) + '%'
+    print 'The sparsity level is ' + str(sparsity * 100) + '%'
 
     # get SVD components from train matrix. Choose k.
     u, s, vt = svds(train_data_matrix, k=20)
