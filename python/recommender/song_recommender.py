@@ -80,7 +80,9 @@ if __name__ == "__main__":
     # Load music data
     song_data = load_music_data("song_data.csv")
 
-    song_data = song_data.head(10000)
+    # Reduce complexity by getting first n elements
+    n = 10000
+    song_data = song_data.head(n)
     user_idx = values_to_map_index(song_data.user_id.unique())
     song_idx = values_to_map_index(song_data.song_id.unique())
 
