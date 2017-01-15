@@ -72,6 +72,14 @@ def tf_idf(word, doc, list_of_docs):
     return (tf(word, doc) * idf(word, list_of_docs))
 
 
+def print_top_words(model, feature_names, n_top_words):
+    for topic_idx, topic in enumerate(model.components_):
+        print("Topic #%d:" % topic_idx)
+        print(" ".join([feature_names[i]
+                        for i in topic.argsort()[:-n_top_words - 1:-1]]))
+    print()
+
+
 if __name__ == "__main__":
     t_start = time.time()
     print "-- ----------------------------------------------------------------"
@@ -101,12 +109,12 @@ if __name__ == "__main__":
     txt_obama = obama["text"].tolist()[0]
     print "-- Obama term frequence"
     for word in txt_obama.split():
-        print word, freq(word, txt_obama)
+        print word, tf(word, txt_obama)
 
     txt_taylor = taylor["text"].tolist()[0]
     print "-- Taylor Swift term frequence"
     for word in txt_taylor.split():
-        print word, freq(word, txt_taylor)
+        print word, tf(word, txt_taylor)
 
     # Calculate TF-IDF
     print "-- Obama TF-IDF"
