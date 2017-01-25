@@ -4,6 +4,7 @@ import os
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
 from pydicom import dicomio
 
 if __name__ == "__main__":
@@ -73,3 +74,35 @@ if __name__ == "__main__":
     axs[2].hist((data[0] - mean_img).ravel(), bins)
     axs[2].set_title("(img - mean) distribution")
     plt.show()
+
+    print "Tensors"
+    x = tf.linspace(-2.0, 2.0, 10)
+    print x
+
+    print "Graphs and Operations"
+    g = tf.get_default_graph()
+    print [op.name for op in g.get_operations()]
+
+    print "Tensor"
+    print g.get_tensor_by_name('LinSpace' + ':0')
+
+    # Create Session
+    sess = tf.Session()
+
+    # Tell session to compute
+    print "Session computes"
+    computed_x = sess.run(x)
+    print(computed_x)
+
+    # Evaluate itself using this session
+    print "Variable evaluates"
+    computed_x = x.eval(session=sess)
+    print(computed_x)
+
+    print "Tensor shapes"
+    print(x.get_shape())
+    # convert to list format
+    print(x.get_shape().as_list())
+
+    # Close the session
+    sess.close()
