@@ -8,6 +8,10 @@ import tensorflow as tf
 from pydicom import dicomio
 
 if __name__ == "__main__":
+
+    ##############################
+    # Basic read and show images #
+    ##############################
     img = mpimg.imread("imgs/dogs.jpg")
     print "Image data", img.shape
     print img
@@ -26,6 +30,9 @@ if __name__ == "__main__":
     plt.imshow(img[:, :, 2], cmap="gray")
     plt.show()
 
+    ############################
+    # Mean/Deviation of Images #
+    ############################
     root_dir = "sample_images/00cba091fa4ad62cc3200a657aeb957e/"
     os.chdir(root_dir)
     images = []
@@ -51,6 +58,9 @@ if __name__ == "__main__":
     plt.imshow(std_img.astype(np.uint8))
     plt.show()
 
+    #############
+    # Histogram #
+    #############
     # convert to flattened array
     flattened = data.ravel()
     print "First image:", data[:1]
@@ -75,8 +85,11 @@ if __name__ == "__main__":
     axs[2].set_title("(img - mean) distribution")
     plt.show()
 
+    ####################
+    # Tensorflow basic #
+    ####################
     print "Tensors"
-    x = tf.linspace(-2.0, 2.0, 10)
+    x = tf.linspace(-3.0, 3.0, 100)
     print x
 
     print "Graphs and Operations"
@@ -106,3 +119,56 @@ if __name__ == "__main__":
 
     # Close the session
     sess.close()
+
+    # explicitly tell the session which graph we want to manage
+    sess = tf.Session(graph=g)
+    sess.close()
+
+    # created a new graph
+    g2 = tf.Graph()
+
+    # interactive with Tensorflow
+    sess = tf.InteractiveSession()
+    print x.eval()
+
+    ###############
+    # Convolution #
+    ###############
+    mean = 0.0
+    sigma = 1.0
+
+    z = (tf.exp(tf.neg(tf.pow(x - mean, 2.0) /
+                       (2.0 * tf.pow(sigma, 2.0)))) *
+         (1.0 / (sigma * tf.sqrt(2.0 * 3.1415))))
+
+    res = z.eval()
+    plt.style.use("ggplot")
+    plt.plot(res)
+    plt.show()
+
+    # store the number of values in our Gaussian curve.
+    ksize = z.get_shape().as_list()[0]
+
+    # multiply the two to get a 2d gaussian
+    z_2d = tf.matmul(tf.reshape(z, [ksize, 1]), tf.reshape(z, [1, ksize]))
+
+    # Execute the graph
+    plt.imshow(z_2d.eval())
+    plt.colorbar()
+    plt.show()
+
+    # use tensorflow to reshape matrix
+    img = mean_img.astype(np.float32)
+    img_4d = tf.reshape(img, [1, img.shape[0], img.shape[1], 1])
+    print("Tensorflow image shape:", img_4d.get_shape().as_list())
+
+    # Reshape with 4d format: H x W x I x O
+    z_4d = tf.reshape(z_2d, [ksize, ksize, 1, 1])
+    print("Tensorflow kernel shape:", z_4d.get_shape().as_list())
+
+    convolved = tf.nn.conv2d(img_4d, z_4d, strides=[1, 1, 1, 1], padding='SAME')
+    res = convolved.eval()
+
+    plt.imshow(np.squeeze(res), cmap='gray')
+    plt.imshow(res[0, :, :, 0], cmap='gray')
+    plt.show()
