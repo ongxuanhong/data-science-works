@@ -7,6 +7,16 @@ import numpy as np
 import tensorflow as tf
 from pydicom import dicomio
 
+
+def convolution_with_filter(img_4d, filter):
+    convolved = tf.nn.conv2d(img_4d, filter, strides=[1, 1, 1, 1], padding='SAME')
+    res = convolved.eval()
+
+    plt.imshow(np.squeeze(res), cmap='gray')
+    plt.imshow(res[0, :, :, 0], cmap='gray')
+    plt.show()
+
+
 if __name__ == "__main__":
 
     ##############################
@@ -166,9 +176,27 @@ if __name__ == "__main__":
     z_4d = tf.reshape(z_2d, [ksize, ksize, 1, 1])
     print("Tensorflow kernel shape:", z_4d.get_shape().as_list())
 
-    convolved = tf.nn.conv2d(img_4d, z_4d, strides=[1, 1, 1, 1], padding='SAME')
-    res = convolved.eval()
+    convolution_with_filter(img_4d, z_4d)
 
-    plt.imshow(np.squeeze(res), cmap='gray')
-    plt.imshow(res[0, :, :, 0], cmap='gray')
-    plt.show()
+    # apply sharpen filter
+    sharpen_filter = np.zeros([3, 3, 1, 1])
+    sharpen_filter[1, 1, :, :] = 5
+    sharpen_filter[0, 1, :, :] = -1
+    sharpen_filter[1, 0, :, :] = -1
+    sharpen_filter[2, 1, :, :] = -1
+    sharpen_filter[1, 2, :, :] = -1
+
+    convolution_with_filter(img_4d, sharpen_filter)
+
+    # apply top sobel filter
+    top_sobel_filter = np.zeros([3, 3, 1, 1])
+    top_sobel_filter[0, 0, :, :] = 1
+    top_sobel_filter[0, 1, :, :] = 2
+    top_sobel_filter[0, 2, :, :] = 1
+    top_sobel_filter[2, 0, :, :] = -1
+    top_sobel_filter[2, 1, :, :] = -2
+    top_sobel_filter[2, 2, :, :] = -1
+
+    convolution_with_filter(img_4d, top_sobel_filter)
+
+
