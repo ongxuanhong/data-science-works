@@ -1,8 +1,10 @@
 # -*- coding: utf8 -*-
 
+import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
+from scipy.misc import imresize
 from tensorflow.python.framework import ops
 
 plt.style.use('ggplot')
@@ -39,9 +41,6 @@ def train(X, Y, Y_pred, n_iterations=100, batch_size=200, learning_rate=0.02):
             training_cost = sess.run(cost, feed_dict={X: xs, Y: ys})
 
             if it_i % 10 == 0:
-                # lấy giá trị dự đoán
-                # ys_pred = Y_pred.eval(feed_dict={X: xs}, session=sess)
-
                 # in ra lỗi huẫn luyện hiện tại
                 print "Cost:", training_cost
 
@@ -73,6 +72,50 @@ def linear(X, n_input, n_output, activation=None, scope=None):
         if activation is not None:
             h = activation(h)
         return h
+
+
+def image_inpainting(X, Y, Y_pred, n_iterations=100, batch_size=200, learning_rate=0.001):
+    cost = tf.reduce_mean(tf.reduce_sum(distance(Y_pred, Y), 1))
+    optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
+
+    with tf.Session() as sess:
+        # thông báo cho TensorFlow biết ta cần khởi tạo tất cả các biến trong Graph
+        # lúc này, `W` và `b` sẽ được khởi tạo
+        sess.run(tf.global_variables_initializer())
+
+        # bắt đầu vòng lặp huấn luyện
+        prev_training_cost = 0.0
+        for it_i in range(n_iterations):
+            # hoán vị chỉ số các phần tử trong x-axis
+            idxs = np.random.permutation(range(len(xs)))
+            n_batches = len(idxs)
+            for batch_i in range(n_batches):
+                # lấy batch_size giá trị các phần tử x-axis được lấy ngẫu nhiên
+                # để huấn luyện
+                idxs_i = idxs[batch_i * batch_size: (batch_i + 1) * batch_size]
+                sess.run(optimizer, feed_dict={X: xs[idxs_i], Y: ys[idxs_i]})
+
+            # lấy giá trị lỗi huấn luyện hiện tại
+            training_cost = sess.run(cost, feed_dict={X: xs, Y: ys})
+
+            # in ra lỗi huẫn luyện hiện tại
+            print "Cost", it_i, training_cost
+
+            if (it_i + 1) % 20 == 0:
+                # lấy giá trị dự đoán
+                ys_pred = Y_pred.eval(feed_dict={X: xs}, session=sess)
+                fig, ax = plt.subplots(1, 1)
+                img = np.clip(ys_pred.reshape(img.shape), 0, 255).astype(np.uint8)
+                plt.imshow(img)
+                plt.show()
+
+            # dừng quá trình huấn luyện nếu độ lỗi không thay đổi nhiều
+            if np.abs(prev_training_cost - training_cost) < 0.000001:
+                print "Stop training..."
+                break
+
+            # cập nhật training cost
+            prev_training_cost = training_cost
 
 
 if __name__ == "__main__":
@@ -158,3 +201,55 @@ if __name__ == "__main__":
 
     # xem danh sách operations trong graph
     print [op.name for op in tf.get_default_graph().get_operations()]
+
+    ####################
+    # Image Inpainting #
+    ####################
+    img = mpimg.imread("imgs/dogs.jpg")
+    img = imresize(img, (64, 64))
+    plt.imshow(img)
+    plt.show()
+
+    # lưu vị trí điểm ảnh vào x-axis
+    xs = []
+
+    # lưu giá trị màu tương ứng với vị trí điểm ảnh
+    ys = []
+
+    # duyệt qua từng điểm ảnh
+    for row_i in range(img.shape[0]):
+        for col_i in range(img.shape[1]):
+            # lưu giá trị inputs
+            xs.append([row_i, col_i])
+
+            # lưu giá trị màu outputs Networks cần dự đoán
+            ys.append(img[row_i, col_i])
+
+    # convert lists to arrays for numpy calculation
+    xs = np.array(xs)
+    ys = np.array(ys)
+
+    # Normalizing the input by the mean and standard deviation
+    xs = (xs - np.mean(xs)) / np.std(xs)
+
+    # print the shapes
+    print xs.shape, ys.shape
+
+    X = tf.placeholder(tf.float32, shape=[None, 2], name='X')
+    Y = tf.placeholder(tf.float32, shape=[None, 3], name='Y')
+
+    # building networks
+    n_neurons = [2, 64, 64, 64, 64, 64, 64, 3]
+
+    current_input = X
+    for layer_i in range(1, len(n_neurons)):
+        current_input = linear(
+            X=current_input,
+            n_input=n_neurons[layer_i - 1],
+            n_output=n_neurons[layer_i],
+            activation=tf.nn.relu if (layer_i + 1) < len(n_neurons) else None,
+            scope='layer_' + str(layer_i))
+
+    # training painting
+    Y_pred = current_input
+    image_inpainting(X, Y, Y_pred)
