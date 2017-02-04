@@ -42,9 +42,9 @@ def train(X, Y, Y_pred, n_iterations=100, batch_size=200, learning_rate=0.02):
                 # ys_pred = Y_pred.eval(feed_dict={X: xs}, session=sess)
 
                 # in ra lỗi huẫn luyện hiện tại
-                print "Training cost:", training_cost
+                print "Cost:", training_cost
 
-            # dừng quá trình huấn luyện nếu đạt được độ lỗi mong muốn
+            # dừng quá trình huấn luyện nếu độ lỗi không thay đổi nhiều
             if np.abs(prev_training_cost - training_cost) < 0.000001:
                 print "Stop training..."
                 break
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     # Tạo placeholder tên  để truyền giá trị của y-axis vào
     Y = tf.placeholder(tf.float32, name='Y')
 
-    # sess = tf.InteractiveSession()
+    sess = tf.InteractiveSession()
 
     # để tạo biến ta dùng tf.Variable, không như tf.Placeholder, hàm này không
     # đòi hỏi phải định nghĩa giá trị ngay thời điểm bắt đầu run/eval.
@@ -84,5 +84,16 @@ if __name__ == "__main__":
     # giá trị dự đoán
     Y_pred = X * W + B
 
-    # Retrain with our new Y_pred
+    # huấn luyện mô hình
+    print "Training linear model..."
     train(X, Y, Y_pred, 500, 1000)
+
+    # tăng bậc cho mô hình
+    degree = 3
+    Y_pred = tf.Variable(tf.random_normal([1]), name='bias')
+    W = tf.Variable(tf.random_normal([1], stddev=0.1), name='weight_%d' % degree)
+    Y_pred = tf.add(tf.mul(tf.pow(X, degree), W), Y_pred)
+
+    # huấn luyện mô hình
+    print "Training polynomial model..."
+    train(X, Y, Y_pred, 500, 100, 0.01)
