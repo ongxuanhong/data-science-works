@@ -12,6 +12,47 @@ def distance(p1, p2):
     return tf.abs(p1 - p2)
 
 
+# hàm huấn luyện Stochastic and Mini Batch Gradient Descent
+def train(X, Y, Y_pred, n_iterations=100, batch_size=200, learning_rate=0.02):
+    cost = tf.reduce_mean(distance(Y_pred, Y))
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
+
+    with tf.Session() as sess:
+        # thông báo cho TensorFlow biết ta cần khởi tạo tất cả các biến trong Graph
+        # lúc này, `W` và `b` sẽ được khởi tạo
+        sess.run(tf.global_variables_initializer())
+
+        # bắt đầu vòng lặp huấn luyện
+        prev_training_cost = 0.0
+        for it_i in range(n_iterations):
+            # hoán vị chỉ số các phần tử trong x-axis
+            idxs = np.random.permutation(range(len(xs)))
+            n_batches = len(idxs)
+            for batch_i in range(n_batches):
+                # lấy batch_size giá trị các phần tử x-axis được lấy ngẫu nhiên
+                # để huấn luyện
+                idxs_i = idxs[batch_i * batch_size: (batch_i + 1) * batch_size]
+                sess.run(optimizer, feed_dict={X: xs[idxs_i], Y: ys[idxs_i]})
+
+            # lấy giá trị lỗi huấn luyện hiện tại
+            training_cost = sess.run(cost, feed_dict={X: xs, Y: ys})
+
+            if it_i % 10 == 0:
+                # lấy giá trị dự đoán
+                # ys_pred = Y_pred.eval(feed_dict={X: xs}, session=sess)
+
+                # in ra lỗi huẫn luyện hiện tại
+                print "Training cost:", training_cost
+
+            # dừng quá trình huấn luyện nếu đạt được độ lỗi mong muốn
+            if np.abs(prev_training_cost - training_cost) < 0.000001:
+                print "Stop training..."
+                break
+
+            # cập nhật training cost
+            prev_training_cost = training_cost
+
+
 if __name__ == "__main__":
     # định nghĩa số lượng đối tượng quan sát
     n_observations = 1000
@@ -22,7 +63,7 @@ if __name__ == "__main__":
     # khởi tạo giá trị đầu ra theo hình sine
     ys = np.sin(xs) + np.random.uniform(-0.5, 0.5, n_observations)
     plt.scatter(xs, ys, alpha=0.15, marker='+')
-    plt.show()
+    # plt.show()
 
     # Tạo placeholder tên X để truyền giá trị của x-axis vào
     X = tf.placeholder(tf.float32, name='X')
@@ -43,37 +84,5 @@ if __name__ == "__main__":
     # giá trị dự đoán
     Y_pred = X * W + B
 
-    # định nghĩa hàm lỗi: trung bình cộng khoảng cách giữa giá trị dự đoán
-    # và giá trị thực tế
-    cost = tf.reduce_mean(distance(Y_pred, Y))
-
-    # định nghĩa hàm huấn luyện
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(cost)
-
-    # xác định số lần lặp
-    n_iterations = 500
-    with tf.Session() as sess:
-        # thông báo cho TensorFlow biết ta cần khởi tạo tất cả các biến trong Graph
-        # lúc này, `W` và `b` sẽ được khởi tạo
-        sess.run(tf.global_variables_initializer())
-
-        # bắt đầu vòng lặp huấn luyện
-        prev_training_cost = 0.0
-        for it_i in range(n_iterations):
-            sess.run(optimizer, feed_dict={X: xs, Y: ys})
-            training_cost = sess.run(cost, feed_dict={X: xs, Y: ys})
-
-            # sau mỗi 10 lần lặp
-            if it_i % 10 == 0:
-                # lấy giá trị dự đoán
-                ys_pred = Y_pred.eval(feed_dict={X: xs}, session=sess)
-
-                # in ra lỗi huẫn luyện hiện tại
-                print "Training cost:", training_cost
-
-            # dừng quá trình huấn luyện nếu đạt được độ lỗi mong muốn
-            if np.abs(prev_training_cost - training_cost) < 0.000001:
-                break
-
-            # cập nhật training cost
-            prev_training_cost = training_cost
+    # Retrain with our new Y_pred
+    train(X, Y, Y_pred, 500, 1000)
