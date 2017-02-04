@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.framework import ops
 
 plt.style.use('ggplot')
 
@@ -53,6 +54,27 @@ def train(X, Y, Y_pred, n_iterations=100, batch_size=200, learning_rate=0.02):
             prev_training_cost = training_cost
 
 
+def linear(X, n_input, n_output, activation=None, scope=None):
+    with tf.variable_scope(scope or "linear"):
+        # khởi tạo trọng số W cho n-layers
+        W = tf.get_variable(
+            name='W',
+            shape=[n_input, n_output],
+            initializer=tf.random_normal_initializer(mean=0.0, stddev=0.1))
+
+        # khởi tạo bias cho n-layers
+        b = tf.get_variable(
+            name='b',
+            shape=[n_output],
+            initializer=tf.constant_initializer())
+
+        # kích hoạt giá trị dự đoán hypothesis (h)
+        h = tf.matmul(X, W) + b
+        if activation is not None:
+            h = activation(h)
+        return h
+
+
 if __name__ == "__main__":
     # định nghĩa số lượng đối tượng quan sát
     n_observations = 1000
@@ -66,24 +88,15 @@ if __name__ == "__main__":
     plt.show()
 
     # Tạo placeholder tên X để truyền giá trị của x-axis vào
+    # name=`X` dùng để quan sát operations trong Graph
     X = tf.placeholder(tf.float32, name='X')
 
     # Tạo placeholder tên  để truyền giá trị của y-axis vào
     Y = tf.placeholder(tf.float32, name='Y')
 
-    # Nonlinearities / Activation Function
-    sess = tf.InteractiveSession()
-    x = np.linspace(-6, 6, 1000)
-    plt.plot(x, tf.nn.tanh(x).eval(), label='tanh')
-    plt.plot(x, tf.nn.sigmoid(x).eval(), label='sigmoid')
-    plt.plot(x, tf.nn.relu(x).eval(), label='relu')
-    plt.legend(loc='lower right')
-    plt.xlim([-6, 6])
-    plt.ylim([-2, 2])
-    plt.xlabel('Input')
-    plt.ylabel('Output')
-    plt.grid('on')
-    plt.show()
+    #########################
+    # Simple Neural Network #
+    #########################
 
     # để tạo biến ta dùng tf.Variable, không như tf.Placeholder, hàm này không
     # đòi hỏi phải định nghĩa giá trị ngay thời điểm bắt đầu run/eval.
@@ -109,3 +122,39 @@ if __name__ == "__main__":
     # huấn luyện mô hình
     print "Training polynomial model..."
     train(X, Y, Y_pred, 500, 100, 0.01)
+
+    ########################################
+    # Nonlinearities / Activation Function #
+    ########################################
+
+    sess = tf.InteractiveSession()
+    x = np.linspace(-6, 6, 1000)
+    plt.plot(x, tf.nn.tanh(x).eval(), label='tanh')
+    plt.plot(x, tf.nn.sigmoid(x).eval(), label='sigmoid')
+    plt.plot(x, tf.nn.relu(x).eval(), label='relu')
+    plt.legend(loc='lower right')
+    plt.xlim([-6, 6])
+    plt.ylim([-2, 2])
+    plt.xlabel('Input')
+    plt.ylabel('Output')
+    plt.grid('on')
+    plt.show()
+
+    # clear the graph
+    ops.reset_default_graph()
+
+    # get current graph
+    g = tf.get_default_graph()
+
+    # tạo network mới
+    X = tf.placeholder(tf.float32, name='X')
+    h = linear(X, 2, 10, scope='layer1')
+
+    # tạo Deep Network!
+    h2 = linear(h, 10, 10, scope='layer2')
+
+    # thêm layer!
+    h3 = linear(h2, 10, 3, scope='layer3')
+
+    # xem danh sách operations trong graph
+    print [op.name for op in tf.get_default_graph().get_operations()]
