@@ -63,7 +63,7 @@ if __name__ == "__main__":
     # khởi tạo giá trị đầu ra theo hình sine
     ys = np.sin(xs) + np.random.uniform(-0.5, 0.5, n_observations)
     plt.scatter(xs, ys, alpha=0.15, marker='+')
-    # plt.show()
+    plt.show()
 
     # Tạo placeholder tên X để truyền giá trị của x-axis vào
     X = tf.placeholder(tf.float32, name='X')
@@ -71,7 +71,19 @@ if __name__ == "__main__":
     # Tạo placeholder tên  để truyền giá trị của y-axis vào
     Y = tf.placeholder(tf.float32, name='Y')
 
+    # Nonlinearities / Activation Function
     sess = tf.InteractiveSession()
+    x = np.linspace(-6, 6, 1000)
+    plt.plot(x, tf.nn.tanh(x).eval(), label='tanh')
+    plt.plot(x, tf.nn.sigmoid(x).eval(), label='sigmoid')
+    plt.plot(x, tf.nn.relu(x).eval(), label='relu')
+    plt.legend(loc='lower right')
+    plt.xlim([-6, 6])
+    plt.ylim([-2, 2])
+    plt.xlabel('Input')
+    plt.ylabel('Output')
+    plt.grid('on')
+    plt.show()
 
     # để tạo biến ta dùng tf.Variable, không như tf.Placeholder, hàm này không
     # đòi hỏi phải định nghĩa giá trị ngay thời điểm bắt đầu run/eval.
