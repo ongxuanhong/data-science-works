@@ -1,6 +1,8 @@
 import argparse
+import datetime
 import os
 import sys
+import time
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -14,11 +16,23 @@ def feature_extract(pth):
     return bowDiction.compute(gray, sift.detect(gray))
 
 
+def time_diff_str(t1, t2):
+    """
+    Calculates time durations.
+    """
+    diff = t2 - t1
+    mins = int(diff / 60)
+    secs = round(diff % 60, 2)
+    return str(mins) + " mins and " + str(secs) + " seconds"
+
+
 if __name__ == "__main__":
     # Load opencv libraries
     sys.path.append('/usr/local/lib/python2.7/site-packages')
     import cv2
     from imutils import paths
+
+    t_start = time.time()
 
     # construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
@@ -89,3 +103,5 @@ if __name__ == "__main__":
     model.fit(trainFeat, trainLabels)
     acc = model.score(testFeat, testLabels)
     print("[INFO] accuracy: {:.2f}%".format(acc * 100))
+
+    print "-- %s * DONE After * %s" % (datetime.datetime.now(), time_diff_str(t_start, time.time()))
