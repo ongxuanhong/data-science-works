@@ -1,10 +1,20 @@
 import argparse
 import os
 import sys
+from operator import itemgetter
 
 import numpy as np
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF
 from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 
 
 def image_to_feature_vector(image, size=(32, 32)):
@@ -90,20 +100,58 @@ if __name__ == "__main__":
 
     # partition the data into training and testing splits, using 75%
     # of the data for training and the remaining 25% for testing
-    (trainRI, testRI, trainRL, testRL) = train_test_split(rawImages, labels, test_size=0.25, random_state=42)
+    # (trainRI, testRI, trainRL, testRL) = train_test_split(rawImages, labels, test_size=0.25, random_state=42)
     (trainFeat, testFeat, trainLabels, testLabels) = train_test_split(features, labels, test_size=0.25, random_state=42)
 
-    # train and evaluate a k-NN classifer on the raw pixel intensities
-    print("[INFO] evaluating raw pixel accuracy...")
-    model = KNeighborsClassifier(n_neighbors=args["neighbors"], n_jobs=args["jobs"])
-    model.fit(trainRI, trainRL)
-    acc = model.score(testRI, testRL)
-    print("[INFO] raw pixel accuracy: {:.2f}%".format(acc * 100))
+    # # train and evaluate a k-NN classifer on the raw pixel intensities
+    # print("[INFO] evaluating raw pixel accuracy...")
+    # model = KNeighborsClassifier(n_neighbors=args["neighbors"], n_jobs=args["jobs"])
+    # model.fit(trainRI, trainRL)
+    # acc = model.score(testRI, testRL)
+    # print("[INFO] raw pixel accuracy: {:.2f}%".format(acc * 100))
+    #
+    # # train and evaluate a k-NN classifer on the histogram
+    # # representations
+    # print("[INFO] evaluating histogram accuracy...")
+    # model = KNeighborsClassifier(n_neighbors=args["neighbors"], n_jobs=args["jobs"])
+    # model.fit(trainFeat, trainLabels)
+    # acc = model.score(testFeat, testLabels)
+    # print("[INFO] histogram accuracy: {:.2f}%".format(acc * 100))
 
-    # train and evaluate a k-NN classifer on the histogram
-    # representations
-    print("[INFO] evaluating histogram accuracy...")
-    model = KNeighborsClassifier(n_neighbors=args["neighbors"], n_jobs=args["jobs"])
-    model.fit(trainFeat, trainLabels)
-    acc = model.score(testFeat, testLabels)
-    print("[INFO] histogram accuracy: {:.2f}%".format(acc * 100))
+    print "---------------------------"
+    print "Training"
+    print "---------------------------"
+
+    names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", "Gaussian Process",
+             "Decision Tree", "Random Forest", "Neural Net", "AdaBoost",
+             "Naive Bayes", "QDA"]
+
+    classifiers = [
+        KNeighborsClassifier(3, n_jobs=args["jobs"]),
+        SVC(kernel="linear", C=0.025),
+        SVC(gamma=2, C=1),
+        GaussianProcessClassifier(1.0 * RBF(1.0), warm_start=True, n_jobs=args["jobs"]),
+        DecisionTreeClassifier(max_depth=5),
+        RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1, n_jobs=args["jobs"]),
+        MLPClassifier(alpha=1),
+        AdaBoostClassifier(),
+        GaussianNB(),
+        QuadraticDiscriminantAnalysis()]
+
+    # iterate over classifiers
+    results = {}
+
+    for name, clf in zip(names, classifiers):
+        print "Training " + name + " classifier..."
+        clf.fit(trainFeat, trainLabels)
+        score = clf.score(testFeat, testLabels)
+        results[name] = score
+
+    print "---------------------------"
+    print "Evaluation results"
+    print "---------------------------"
+
+    # sorting results and print out
+    sorted(results.items(), key=itemgetter(1))
+    for name in results:
+        print name + " accuracy: %0.3f" % results[name]
