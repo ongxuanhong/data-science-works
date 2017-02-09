@@ -45,9 +45,15 @@ if __name__ == "__main__":
 
                 # normalize image values to [0, 255]
                 cv2.normalize(img, img, 0, 255, cv2.NORM_MINMAX)
+                img = cv2.medianBlur(img.astype(np.uint8), 5)
 
                 # image segmentation
-                ret, thresh = cv2.threshold(img.astype(np.uint8), 127, 255, cv2.THRESH_TOZERO)
+                thresh = cv2.adaptiveThreshold(img,
+                                               255,
+                                               cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                               cv2.THRESH_BINARY,
+                                               11,
+                                               2)
                 images.append(thresh)
 
             data = np.array(images)
@@ -59,6 +65,7 @@ if __name__ == "__main__":
         # show an update every 10 patients
         if i > 0 and i % 10 == 0:
             print "[INFO] processed {}/{} patients".format(i, len(list_dir))
+            print "[INFO] time passed", time_diff_str(t_start, time.time())
 
     print len(patients_images_dict)
     print "[INFO]", datetime.datetime.now(), "* DONE After *", time_diff_str(t_start, time.time())
