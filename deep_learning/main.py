@@ -17,6 +17,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 sys.path.append("/usr/local/lib/python2.7/site-packages")
@@ -91,6 +92,34 @@ def get_hist_feature_labels(patient_labels, img_paths):
     return features, labels
 
 
+def sift_feature_extract(img_paths, patient_labels, bow_dict):
+    features = []
+    labels = []
+
+    # loop over the input images
+    for (i, img_path) in enumerate(img_paths):
+        # get only training labels
+        base = os.path.basename(img_path)
+        patient_id = os.path.splitext(base)[0]
+        if patient_id in patient_labels["cancer"]:
+            labels.append(patient_labels["cancer"][patient_id])
+        else:
+            continue
+
+        # load the image
+        gray = cv2.imread(img_path)
+        sift_feature = bow_dict.compute(gray, sift.detect(gray))
+
+        # update features
+        features.extend(sift_feature)
+
+        # show an update every 100 images
+        if i > 0 and i % 100 == 0:
+            print("[INFO] processed {}/{}".format(i, len(img_paths)))
+
+    return features, labels
+
+
 if __name__ == "__main__":
     t_start = time.time()
 
@@ -108,33 +137,31 @@ if __name__ == "__main__":
     stage1_labels = load_csv("stage1_labels.csv")
     stage1_sample_submission = load_csv("stage1_sample_submission.csv")
 
-    train_features, train_labels = get_hist_feature_labels(stage1_labels, img_paths)
-    test_features, test_labels = get_hist_feature_labels(stage1_sample_submission, img_paths)
+    # Generating Bag of Words model
+    dictionarySize = 5
+    BOW = cv2.BOWKMeansTrainer(dictionarySize)
+    sift = cv2.xfeatures2d.SIFT_create()
 
-    # loop over the input images
-    for (i, imagePath) in enumerate(img_paths):
-        # get only training labels
-        base = os.path.basename(imagePath)
-        patient_id = os.path.splitext(base)[0]
-        if patient_id in stage1_labels["cancer"].keys():
-            train_labels.append(stage1_labels["cancer"][patient_id])
-        else:
-            continue
+    for (i, image_path) in enumerate(img_paths):
+        gray = cv2.imread(image_path)
+        kp, dsc = sift.detectAndCompute(gray, None)
+        BOW.add(dsc)
+        print("# kps: {}, descriptors: {}".format(len(kp), dsc.shape))
 
-        # load the image
-        image = cv2.imread(imagePath)
+    # dictionary created
+    dictionary = BOW.cluster()
+    index_params = dict(algorithm=0, trees=5)
+    search_params = dict(checks=50)  # or pass empty dictionary
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
+    sift2 = cv2.xfeatures2d.SIFT_create()
+    bowDiction = cv2.BOWImgDescriptorExtractor(sift2, cv2.BFMatcher(cv2.NORM_L2))
+    bowDiction.setVocabulary(dictionary)
+    print "[INFO] Finished create BOW dictionary", time_diff_str(t_start, time.time())
 
-        # histogram to characterize the color distribution of the pixels
-        # in the image
-        hist = extract_color_histogram(image)
-
-        # update features
-        train_features.append(hist)
-
-        # show an update every 100 images
-        if i > 0 and i % 100 == 0:
-            print("[INFO] processed {}/{}".format(i, len(img_paths)))
-
+    # train_features, train_labels = get_hist_feature_labels(stage1_labels, img_paths)
+    # test_features, test_labels = get_hist_feature_labels(stage1_sample_submission, img_paths)
+    train_features, train_labels = sift_feature_extract(img_paths, stage1_labels, bowDiction)
+    test_features, test_labels = sift_feature_extract(img_paths, stage1_sample_submission, bowDiction)
     train_features = np.array(train_features)
     print("[INFO] features matrix: {:.2f}MB".format(train_features.nbytes / (1024 * 1000.0)))
 
@@ -187,20 +214,12 @@ if __name__ == "__main__":
     clf = classifiers[name]
     print "[INFO]" + name + " classifier..."
     clf.fit(train_features, train_labels)
-    predict_submission = clf.predict_proba(test_features)
+    predict_submission = clf.predict(test_features)
 
     # update submission
     submission = {}
     for (i, patient_id) in enumerate(stage1_sample_submission["cancer"]):
-        predict_value = 0
-
-        classes = predict_submission[i]
-        if classes[0] < classes[1]:
-            predict_value = classes[1]
-        else:
-            predict_value = classes[0]
-
-        submission[patient_id] = predict_value
+        submission[patient_id] = predict_submission[i]
 
     with open("submission_results.csv", "wb") as f:
         writer = csv.writer(f, delimiter=',')
