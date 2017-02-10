@@ -1,4 +1,5 @@
 import argparse
+import csv
 import datetime
 import os
 import sys
@@ -16,7 +17,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 sys.path.append("/usr/local/lib/python2.7/site-packages")
@@ -60,6 +60,37 @@ def load_csv(file_path):
     return df.to_dict()
 
 
+def get_hist_feature_labels(patient_labels, img_paths):
+    features = []
+    labels = []
+
+    # loop over the input images
+    for (i, img_path) in enumerate(img_paths):
+        # get only training labels
+        base = os.path.basename(img_path)
+        patient_id = os.path.splitext(base)[0]
+        if patient_id in patient_labels["cancer"].keys():
+            labels.append(patient_labels["cancer"][patient_id])
+        else:
+            continue
+
+        # load the image
+        image = cv2.imread(img_path)
+
+        # histogram to characterize the color distribution of the pixels
+        # in the image
+        hist = extract_color_histogram(image)
+
+        # update features
+        features.append(hist)
+
+        # show an update every 100 images
+        if i > 0 and i % 100 == 0:
+            print("[INFO] processed {}/{}".format(i, len(img_paths)))
+
+    return features, labels
+
+
 if __name__ == "__main__":
     t_start = time.time()
 
@@ -71,18 +102,17 @@ if __name__ == "__main__":
 
     # grab the list of images that we'll be describing
     print("[INFO] describing images...")
-    imagePaths = list(paths.list_images(args["dataset"]))
+    img_paths = list(paths.list_images(args["dataset"]))
 
     # load train/test labels
     stage1_labels = load_csv("stage1_labels.csv")
     stage1_sample_submission = load_csv("stage1_sample_submission.csv")
 
-    # initialize features matrix and labels list
-    train_features = []
-    train_labels = []
+    train_features, train_labels = get_hist_feature_labels(stage1_labels, img_paths)
+    test_features, test_labels = get_hist_feature_labels(stage1_sample_submission, img_paths)
 
     # loop over the input images
-    for (i, imagePath) in enumerate(imagePaths):
+    for (i, imagePath) in enumerate(img_paths):
         # get only training labels
         base = os.path.basename(imagePath)
         patient_id = os.path.splitext(base)[0]
@@ -103,7 +133,7 @@ if __name__ == "__main__":
 
         # show an update every 100 images
         if i > 0 and i % 100 == 0:
-            print("[INFO] processed {}/{}".format(i, len(imagePaths)))
+            print("[INFO] processed {}/{}".format(i, len(img_paths)))
 
     train_features = np.array(train_features)
     print("[INFO] features matrix: {:.2f}MB".format(train_features.nbytes / (1024 * 1000.0)))
@@ -117,27 +147,25 @@ if __name__ == "__main__":
     print "Training"
     print "---------------------------"
 
-    names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", "Gaussian Process",
-             "Decision Tree", "Random Forest", "Neural Net", "AdaBoost",
-             "Naive Bayes", "QDA"]
-
-    classifiers = [
-        KNeighborsClassifier(3, n_jobs=args["jobs"]),
-        SVC(kernel="linear", C=0.025),
-        SVC(gamma=2, C=1),
-        GaussianProcessClassifier(1.0 * RBF(1.0), warm_start=True, n_jobs=args["jobs"]),
-        DecisionTreeClassifier(max_depth=5),
-        RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1, n_jobs=args["jobs"]),
-        MLPClassifier(alpha=1),
-        AdaBoostClassifier(),
-        GaussianNB(),
-        QuadraticDiscriminantAnalysis()]
+    classifiers = {
+        "Nearest Neighbors": KNeighborsClassifier(3, n_jobs=args["jobs"]),
+        "Linear SVM": SVC(kernel="linear", C=0.025),
+        "RBF SVM": SVC(gamma=2, C=1),
+        "Gaussian Process": GaussianProcessClassifier(1.0 * RBF(1.0), warm_start=True, n_jobs=args["jobs"]),
+        "Decision Tree": DecisionTreeClassifier(max_depth=5),
+        "Random Forest": RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1, n_jobs=args["jobs"]),
+        "Neural Net": MLPClassifier(alpha=1),
+        "AdaBoost": AdaBoostClassifier(),
+        "Naive Bayes": GaussianNB(),
+        "QDA": QuadraticDiscriminantAnalysis()
+    }
 
     # iterate over classifiers
     results = {}
 
-    for name, clf in zip(names, classifiers):
-        print "Training " + name + " classifier..."
+    for name in classifiers:
+        print "[INFO]" + name + " classifier..."
+        clf = classifiers[name]
         clf.fit(for_train_features, for_train_labels)
         score = clf.score(dev_features, dev_labels)
         results[name] = score
@@ -150,5 +178,34 @@ if __name__ == "__main__":
     sorted(results.items(), key=itemgetter(1))
     for name in results:
         print "[INFO]", name, "accuracy: %0.3f" % results[name]
+
+    print "---------------------------"
+    print "Training for submission"
+    print "---------------------------"
+
+    name = list(results)[0]
+    clf = classifiers[name]
+    print "[INFO]" + name + " classifier..."
+    clf.fit(train_features, train_labels)
+    predict_submission = clf.predict_proba(test_features)
+
+    # update submission
+    submission = {}
+    for (i, patient_id) in enumerate(stage1_sample_submission["cancer"]):
+        predict_value = 0
+
+        classes = predict_submission[i]
+        if classes[0] < classes[1]:
+            predict_value = classes[1]
+        else:
+            predict_value = classes[0]
+
+        submission[patient_id] = predict_value
+
+    with open("submission_results.csv", "wb") as f:
+        writer = csv.writer(f, delimiter=',')
+        writer.writerow(["id", "cancer"])
+        for key, value in submission.items():
+            writer.writerow([key, value])
 
     print "[INFO]", datetime.datetime.now(), "* DONE After *", time_diff_str(t_start, time.time())
