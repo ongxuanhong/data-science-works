@@ -36,6 +36,12 @@ def time_diff_str(t1, t2):
     return str(mins) + " mins and " + str(secs) + " seconds"
 
 
+def image_to_feature_vector(image, size=(32, 32)):
+    # resize the image to a fixed size, then flatten the image into
+    # a list of raw pixel intensities
+    return cv2.resize(image, size).flatten()
+
+
 def extract_color_histogram(image):
     hist = cv2.calcHist([image], [0], None, [8], [0, 256])
 
@@ -59,6 +65,37 @@ def load_csv(file_path):
         df = pd.read_csv(file_path, index_col=0)
 
     return df.to_dict()
+
+
+def get_simple_feature_labels(patient_labels, img_paths):
+    features = []
+    labels = []
+
+    # loop over the input images
+    for (i, img_path) in enumerate(img_paths):
+        # get only training labels
+        base = os.path.basename(img_path)
+        patient_id = os.path.splitext(base)[0]
+        if patient_id in patient_labels["cancer"].keys():
+            labels.append(patient_labels["cancer"][patient_id])
+        else:
+            continue
+
+        # load the image
+        image = cv2.imread(img_path)
+
+        # histogram to characterize the color distribution of the pixels
+        # in the image
+        feat = image_to_feature_vector(image)
+
+        # update features
+        features.append(feat)
+
+        # show an update every 100 images
+        if i > 0 and i % 100 == 0:
+            print("[INFO] processed {}/{}".format(i, len(img_paths)))
+
+    return features, labels
 
 
 def get_hist_feature_labels(patient_labels, img_paths):
@@ -90,6 +127,28 @@ def get_hist_feature_labels(patient_labels, img_paths):
             print("[INFO] processed {}/{}".format(i, len(img_paths)))
 
     return features, labels
+
+
+def generate_bow_features(img_paths, dictionarySize=5):
+    BOW = cv2.BOWKMeansTrainer(dictionarySize)
+    sift = cv2.xfeatures2d.SIFT_create()
+
+    for (i, image_path) in enumerate(img_paths):
+        gray = cv2.imread(image_path)
+        kp, dsc = sift.detectAndCompute(gray, None)
+        BOW.add(dsc)
+        print("# kps: {}, descriptors: {}".format(len(kp), dsc.shape))
+
+    # dictionary created
+    dictionary = BOW.cluster()
+    index_params = dict(algorithm=0, trees=5)
+    search_params = dict(checks=50)  # or pass empty dictionary
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
+    sift2 = cv2.xfeatures2d.SIFT_create()
+    bowDiction = cv2.BOWImgDescriptorExtractor(sift2, cv2.BFMatcher(cv2.NORM_L2))
+    bowDiction.setVocabulary(dictionary)
+    print "[INFO] Finished create BOW dictionary", time_diff_str(t_start, time.time())
+    return bowDiction
 
 
 def sift_feature_extract(img_paths, patient_labels, bow_dict):
@@ -138,30 +197,14 @@ if __name__ == "__main__":
     stage1_sample_submission = load_csv("stage1_sample_submission.csv")
 
     # Generating Bag of Words model
-    dictionarySize = 5
-    BOW = cv2.BOWKMeansTrainer(dictionarySize)
-    sift = cv2.xfeatures2d.SIFT_create()
-
-    for (i, image_path) in enumerate(img_paths):
-        gray = cv2.imread(image_path)
-        kp, dsc = sift.detectAndCompute(gray, None)
-        BOW.add(dsc)
-        print("# kps: {}, descriptors: {}".format(len(kp), dsc.shape))
-
-    # dictionary created
-    dictionary = BOW.cluster()
-    index_params = dict(algorithm=0, trees=5)
-    search_params = dict(checks=50)  # or pass empty dictionary
-    flann = cv2.FlannBasedMatcher(index_params, search_params)
-    sift2 = cv2.xfeatures2d.SIFT_create()
-    bowDiction = cv2.BOWImgDescriptorExtractor(sift2, cv2.BFMatcher(cv2.NORM_L2))
-    bowDiction.setVocabulary(dictionary)
-    print "[INFO] Finished create BOW dictionary", time_diff_str(t_start, time.time())
+    # generate_bow_features(img_paths)
 
     # train_features, train_labels = get_hist_feature_labels(stage1_labels, img_paths)
     # test_features, test_labels = get_hist_feature_labels(stage1_sample_submission, img_paths)
-    train_features, train_labels = sift_feature_extract(img_paths, stage1_labels, bowDiction)
-    test_features, test_labels = sift_feature_extract(img_paths, stage1_sample_submission, bowDiction)
+    # train_features, train_labels = sift_feature_extract(img_paths, stage1_labels, bowDiction)
+    # test_features, test_labels = sift_feature_extract(img_paths, stage1_sample_submission, bowDiction)
+    train_features, train_labels = get_simple_feature_labels(stage1_labels, img_paths)
+    test_features, test_labels = get_simple_feature_labels(stage1_sample_submission, img_paths)
     train_features = np.array(train_features)
     print("[INFO] features matrix: {:.2f}MB".format(train_features.nbytes / (1024 * 1000.0)))
 
