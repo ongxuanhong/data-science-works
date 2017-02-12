@@ -31,7 +31,6 @@ if __name__ == "__main__":
     ap.add_argument("-s", "--saveto", required=True, help="path to saved processed data")
     args = vars(ap.parse_args())
 
-    patients_images_dict = {}
     list_dir = os.listdir(args["dataset"])
     for (i, dir) in enumerate(list_dir):
         if os.path.isfile(dir) is False:
@@ -67,5 +66,4 @@ if __name__ == "__main__":
             print "[INFO] processed {}/{} patients".format(i, len(list_dir))
             print "[INFO] time passed", time_diff_str(t_start, time.time())
 
-    print len(patients_images_dict)
     print "[INFO]", datetime.datetime.now(), "* DONE After *", time_diff_str(t_start, time.time())

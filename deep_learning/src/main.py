@@ -193,8 +193,8 @@ if __name__ == "__main__":
     img_paths = list(paths.list_images(args["dataset"]))
 
     # load train/test labels
-    stage1_labels = load_csv("stage1_labels.csv")
-    stage1_sample_submission = load_csv("stage1_sample_submission.csv")
+    stage1_labels = load_csv("../data/stage1_labels.csv")
+    stage1_sample_submission = load_csv("../data/stage1_sample_submission.csv")
 
     # Generating Bag of Words model
     # generate_bow_features(img_paths)
