@@ -3,31 +3,32 @@ import argparse
 import os
 
 import cv2
+import numpy as np
 from sklearn.cluster import KMeans
 
 
-def get_color_bar(k_cluster, centroids, bar_w=600, bar_h=100):
-    # initialize the bar chart
-    text_y = int(bar_h / 2)
-    bar = np.zeros((bar_h, bar_w, 3), dtype="uint8")
+def get_color_palette(k_cluster, centroids, palette_w=600, palette_h=100):
+    # initialize the color palette
+    text_y = int(palette_h / 2)
+    palette = np.zeros((palette_h, palette_w, 3), dtype="uint8")
     startX = 0
 
     # loop over the color of each cluster
     for color in centroids:
         # plot the relative percentage of each cluster
-        endX = startX + (1.0 / k_cluster * bar_w)
+        endX = startX + (1.0 / k_cluster * palette_w)
         text_x = int(startX + 15)
 
         bgr_code = str(color.astype("uint8").tolist()[0]) + ","
         bgr_code += str(color.astype("uint8").tolist()[1]) + ","
         bgr_code += str(color.astype("uint8").tolist()[2])
 
-        cv2.rectangle(bar, (int(startX), 0), (int(endX), bar_h), color.astype("uint8").tolist(), -1)
-        cv2.putText(bar, bgr_code, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 200))
+        cv2.rectangle(palette, (int(startX), 0), (int(endX), palette_h), color.astype("uint8").tolist(), -1)
+        cv2.putText(palette, bgr_code, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 200))
         startX = endX
 
-    # return the bar chart
-    return bar
+    # return the palette
+    return palette
 
 
 if __name__ == "__main__":
@@ -53,9 +54,9 @@ if __name__ == "__main__":
             clt.fit(image)
 
             # representing the number of pixels labeled to each color
-            bar = get_color_bar(args["clusters"], clt.cluster_centers_)
+            palette = get_color_palette(args["clusters"], clt.cluster_centers_)
 
-            # save color bar
-            fig_out = "fig_out/color_bar_" + img_name + ".png"
-            cv2.imwrite(fig_out, bar)
+            # save color palette
+            fig_out = "fig_out/color_pallete_" + img_name + ".png"
+            cv2.imwrite(fig_out, palette)
             print("Done", f)
