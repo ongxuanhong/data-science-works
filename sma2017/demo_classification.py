@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
             plt.savefig("figs/" + name)
 
-            pcf = precision_recall_fscore_support(y_test, y_pred, average="micro")
+            pcf = precision_recall_fscore_support(y_test, y_pred)
             print "P,C,F", pcf
             writer.writerow([name, pcf[0], pcf[1], pcf[2]])
 
