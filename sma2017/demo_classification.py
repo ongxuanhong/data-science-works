@@ -12,7 +12,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
@@ -108,23 +108,31 @@ if __name__ == "__main__":
     # iterate over classifiers
     results = {}
 
-    for name, clf in zip(names, classifiers):
-        print "Training " + name + " classifier..."
-        clf.fit(X_train, y_train)
-        score = clf.score(X_test, y_test)
-        results[name] = score
+    with open("data/classification_pcf_results.csv", "wb") as f:
+        writer = csv.writer(f, delimiter=",")
+        writer.writerow(["classifiers", "precision", "recall", "fscore"])
 
-        # Compute confusion matrix
-        y_pred = clf.predict(X_test)
-        cnf_matrix = confusion_matrix(y_test, y_pred)
-        np.set_printoptions(precision=2)
+        for name, clf in zip(names, classifiers):
+            print "Training " + name + " classifier..."
+            clf.fit(X_train, y_train)
+            score = clf.score(X_test, y_test)
+            results[name] = score
 
-        # Plot normalized confusion matrix
-        plt.figure()
-        plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True,
-                              title='Normalized confusion matrix')
+            # Compute confusion matrix
+            y_pred = clf.predict(X_test)
+            cnf_matrix = confusion_matrix(y_test, y_pred)
+            np.set_printoptions(precision=2)
 
-        plt.savefig("figs/" + name)
+            # Plot normalized confusion matrix
+            plt.figure()
+            plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True,
+                                  title='Normalized confusion matrix')
+
+            plt.savefig("figs/" + name)
+
+            pcf = precision_recall_fscore_support(y_test, y_pred, average="micro")
+            print "P,C,F", pcf
+            writer.writerow([name, pcf[0], pcf[1], pcf[2]])
 
     print "---------------------------"
     print "Evaluation results"
