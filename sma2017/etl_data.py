@@ -2,7 +2,6 @@
 # - List of creative ids
 # Output:
 # - CSV file for each creative with (Moving average)
-import csv
 import datetime
 import time
 
@@ -60,6 +59,58 @@ def bar_chart(plt, x, y):
     plt.show()
 
 
+def cal_clicks(df):
+    df["clicks"] = df["interactions"].map(lambda a: cal_click_through(a))
+    return df
+
+
+def cal_moving_average(df):
+    df_clicks = df["clicks"]
+
+    # calculating MA5: Moving Average over a 5-days, 12-days, 26-days
+    ma5 = df_clicks.rolling(window=5).mean()
+    ma12 = df_clicks.rolling(window=12).mean()
+    ma26 = df_clicks.rolling(window=26).mean()
+
+    # calculating MACD: Moving Average Convergence/ Divergence
+    macd = ma12.subtract(ma26)
+
+    # updating columns
+    df["macd"] = macd
+    df["ma5"] = ma5
+
+    return df
+
+
+def cal_rsi(df):
+    # Get the difference in price from previous step
+    delta = df["clicks"].diff()
+
+    # Make the positive gains (up) and negative gains (down) Series
+    up, down = delta.copy(), delta.copy()
+    up[up < 0] = 0
+    down[down > 0] = 0
+
+    # Calculate the SMA
+    roll_up = up.rolling(window=14).mean()
+    roll_down = down.rolling(window=14).mean()
+
+    # Calculate the RSI based on SMA
+    RS = roll_up / roll_down
+    RSI = 100.0 - (100.0 / (1.0 + RS))
+    df["rsi"] = RSI
+
+    return df
+
+
+def return_decision(val):
+    if val > 0:
+        return 1
+    elif val < 0:
+        return -1
+    return val
+
+
 if __name__ == "__main__":
     t_start = time.time()
     print "------------------------------------------------"
@@ -92,46 +143,29 @@ if __name__ == "__main__":
         # next item
         idx += 1
 
+        # transforming data
         df_report_items = pd.DataFrame(list(cursor_report))
         df_report_items = df_report_items.sort_values(by=["date"], ascending=[1])
 
-        # for charts
-        x = []
-        y = []
+        # calculating clicks and moving average
+        df_report_items = cal_clicks(df_report_items)
+        df_report_items = cal_moving_average(df_report_items)
+
+        # ROC: Rate of Change
+        df_report_items["roc"] = df_report_items["clicks"].pct_change(periods=12)
+
+        # RSI
+        df_report_items = cal_rsi(df_report_items)
+
+        # decision
+        df_report_items["decision"] = df_report_items["clicks"].diff().map(lambda a: return_decision(a))
+
+        df_out = df_report_items[["date", "macd", "ma5", "roc", "rsi", "clicks", "decision"]].loc[
+            pd.notnull(df_report_items["macd"])
+        ]
 
         # save to CSV file
         data_name = "data/" + item + ".csv"
-        with open(data_name, "wb") as f:
-            for index, report in df_report_items.iterrows():
-                num_items += 1
-                w = csv.DictWriter(f, ["widgetId", "date", "clicks"])
-                w.writeheader()
-
-                clicks = cal_click_through(report["interactions"])
-                hourly = datetime.datetime.fromtimestamp(report["date"]).strftime("%H")
-                w.writerow({
-                    "widgetId": report["widgetId"],
-                    "date": report["date"],
-                    "clicks": clicks
-                })
-
-                x.append(hourly)
-                y.append(clicks)
-
-        print "Number items:", num_items
-        df = df_report_items["interactionCount"]
-        # df = pd.DataFrame(y)
-        ma5 = df.rolling(window=5).mean()
-        ma12 = df.rolling(window=12).mean()
-        ma26 = df.rolling(window=26).mean()
-        ma9 = df.rolling(window=9).mean()
-        macd = ma12.subtract(ma26)
-        print macd
-        value = macd.loc[1]
-        print value
-
-        print df.pct_change(periods=12)
-        # line_chart(plt, x, y)
-        # bar_chart(plt, x, y)
+        df_out.to_csv(path_or_buf=data_name, index=False)
 
     print " %s * DONE After * %s" % (datetime.datetime.now(), time_diff_str(t_start, time.time()))
