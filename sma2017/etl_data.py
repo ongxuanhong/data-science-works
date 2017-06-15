@@ -6,7 +6,6 @@ import csv
 import datetime
 import time
 
-import matplotlib.pyplot as plt
 import pandas as pd
 from pymongo import MongoClient
 
@@ -86,7 +85,7 @@ if __name__ == "__main__":
             "widgetId": item,
             "date": {
                 "$gte": 1493654400,
-                "$lt": 1493740800
+                "$lt": 1494806400
             },
             "section": section[idx]
         })
@@ -112,7 +111,7 @@ if __name__ == "__main__":
                 hourly = datetime.datetime.fromtimestamp(report["date"]).strftime("%H")
                 w.writerow({
                     "widgetId": report["widgetId"],
-                    "date": hourly,
+                    "date": report["date"],
                     "clicks": clicks
                 })
 
@@ -120,7 +119,19 @@ if __name__ == "__main__":
                 y.append(clicks)
 
         print "Number items:", num_items
-        line_chart(plt, x, y)
+        df = df_report_items["interactionCount"]
+        # df = pd.DataFrame(y)
+        ma5 = df.rolling(window=5).mean()
+        ma12 = df.rolling(window=12).mean()
+        ma26 = df.rolling(window=26).mean()
+        ma9 = df.rolling(window=9).mean()
+        macd = ma12.subtract(ma26)
+        print macd
+        value = macd.loc[1]
+        print value
+
+        print df.pct_change(periods=12)
+        # line_chart(plt, x, y)
         # bar_chart(plt, x, y)
 
     print " %s * DONE After * %s" % (datetime.datetime.now(), time_diff_str(t_start, time.time()))
