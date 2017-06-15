@@ -160,12 +160,15 @@ if __name__ == "__main__":
         # decision
         df_report_items["decision"] = df_report_items["clicks"].diff().map(lambda a: return_decision(a))
 
-        df_out = df_report_items[["date", "macd", "ma5", "roc", "rsi", "clicks", "decision"]].loc[
-            pd.notnull(df_report_items["macd"])
-        ]
+        df_out = df_report_items[["macd", "ma5", "roc", "rsi", "decision"]].loc[
+            (pd.notnull(df_report_items["macd"])) &
+            (df_report_items["roc"] != float("inf")) &
+            (df_report_items["rsi"] != float("-inf"))
+            ]
 
         # save to CSV file
         data_name = "data/" + item + ".csv"
+        df_out["decision"] = df_out["decision"].astype(int)
         df_out.to_csv(path_or_buf=data_name, index=False)
 
     print " %s * DONE After * %s" % (datetime.datetime.now(), time_diff_str(t_start, time.time()))
