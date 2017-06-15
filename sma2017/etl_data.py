@@ -2,6 +2,9 @@
 # - List of creative ids
 # Output:
 # - CSV file for each creative with (Moving average)
+# Params: --start_hour="2017050100" --end_hour="2017060100" --widget_ids="knxad_knx2991_201604204777" --adunit_ids="ea845d619a665959b6a6d7415457479a55cd4149"
+import argparse
+import calendar
 import datetime
 import time
 
@@ -111,19 +114,35 @@ def return_decision(val):
     return val
 
 
+def to_epoch(time_param):
+    date = time.strptime(time_param, "%Y%m%d%H")
+    epoch = calendar.timegm(date)
+    return epoch
+
+
 if __name__ == "__main__":
     t_start = time.time()
     print "------------------------------------------------"
     print " %s - ETL clicks data" % datetime.datetime.now()
     print "------------------------------------------------"
 
+    # parse terminal params
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-s", "--start_hour", required=True, help="Start hour YYYYMMDDHH (UTC).")
+    ap.add_argument("-e", "--end_hour", required=True, help="End hour YYYYMMDDHH (UTC).")
+    ap.add_argument("-w", "--widget_ids", required=True, help="Widget ID.")
+    ap.add_argument("-a", "--adunit_ids", required=True, help="Adunit ID.")
+    args = vars(ap.parse_args())
+
     # connect to databases
     conn = MongoClient("mongodb://localhost:27017/")
     db_brand_display_analytics = conn["brand_display_analytics"]
 
     # params
-    widget_ids = ["knxad_knx2991_201604204777"]
-    section = ["ea845d619a665959b6a6d7415457479a55cd4149"]
+    widget_ids = args["widget_ids"].split(",")
+    adunit_ids = args["adunit_ids"].split(",")
+    start_hour = to_epoch(args["start_hour"])
+    end_hour = to_epoch(args["end_hour"])
     coll_brand_display_analytics = db_brand_display_analytics["brand_display" + "_05_2017"]
 
     idx = 0
@@ -135,10 +154,10 @@ if __name__ == "__main__":
         cursor_report = coll_brand_display_analytics.find({
             "widgetId": item,
             "date": {
-                "$gte": 1493654400,
-                "$lt": 1494806400
+                "$gte": start_hour,
+                "$lt": end_hour
             },
-            "section": section[idx]
+            "section": adunit_ids[idx]
         })
         # next item
         idx += 1
