@@ -2,7 +2,7 @@
 # - List of creative ids
 # Output:
 # - CSV file for each creative with (Moving average)
-# Params: --start_hour="2017050100" --end_hour="2017060100" --widget_ids="knxad_knx2991_201604204777" --adunit_ids="ea845d619a665959b6a6d7415457479a55cd4149"
+# Params: --start_hour="2017050116" --end_hour="2017051500" --widget_ids="knxad_knx2991_201604204777" --adunit_ids="ea845d619a665959b6a6d7415457479a55cd4149"
 import argparse
 import calendar
 import datetime
@@ -147,7 +147,7 @@ if __name__ == "__main__":
 
     idx = 0
     for item in widget_ids:
-        print "* Process widget:", item
+        print "* Process widget:", item, start_hour, end_hour
 
         # query report
         num_items = 0
