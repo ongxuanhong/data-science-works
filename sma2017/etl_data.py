@@ -7,6 +7,7 @@ import datetime
 import time
 
 import matplotlib.pyplot as plt
+import pandas as pd
 from pymongo import MongoClient
 
 
@@ -64,7 +65,16 @@ if __name__ == "__main__":
 
         # query report
         num_items = 0
-        cursor_report = coll_brand_display_analytics.find({"widgetId": item})
+        cursor_report = coll_brand_display_analytics.find({
+            "widgetId": item,
+            "date": {
+                "$gte": 1493654400,
+                "$lt": 1493740800
+            },
+            "section": "ea845d619a665959b6a6d7415457479a55cd4149"
+        })
+        df_report_items = pd.DataFrame(list(cursor_report))
+        df_report_items = df_report_items.sort_values(by=["date"], ascending=[1])
 
         # for charts
         x = []
@@ -73,19 +83,20 @@ if __name__ == "__main__":
         # save to CSV file
         data_name = "data/" + item + ".csv"
         with open(data_name, "wb") as f:
-            for report in cursor_report:
+            for index, report in df_report_items.iterrows():
                 num_items += 1
                 w = csv.DictWriter(f, ["widgetId", "date", "clicks"])
                 w.writeheader()
 
                 clicks = cal_click_through(report["interactions"])
+                hourly = datetime.datetime.fromtimestamp(report["date"]).strftime("%H")
                 w.writerow({
                     "widgetId": report["widgetId"],
-                    "date": report["date"],
+                    "date": hourly,
                     "clicks": clicks
                 })
 
-                x.append(report["date"])
+                x.append(hourly)
                 y.append(clicks)
 
         print "Number items:", num_items
