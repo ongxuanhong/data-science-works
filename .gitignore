@@ -3,3 +3,7 @@ deep_learning/sample_images/
 deep_learning/snippets/kaggle_dogs_vs_cats/
 python/clustering/people_wiki.csv
 deep_learning/processed_segmentation/
+metastore_db/
+*.log
+.ipynb_checkpoints/
+.DS_Store
